@@ -31,6 +31,9 @@ include_directories(
 
 add_executable(arucooff precisearuco.cpp)
 
+add_executable(fixarucodepth fixarucodepth.cpp)
+
+
 #add_dependencies(single ${PROJECT_NAME}_gencfg)
 target_link_libraries(arucooff ${catkin_LIBRARIES})
 

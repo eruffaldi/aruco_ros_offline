@@ -130,9 +130,10 @@ int main(int argc, char const *argv[])
     bag2.open("x.bag", rosbag::bagmode::Write);
     std::string outtopic = "/marker";
     int marker_id = 100;
-    std::string sourcetopic = "/kinect1/rgb/image/compressed";
+    std::string sourcetopicC = "/kinect1/depth/image/compressedDepth";
+    std::string sourcetopicD = "/kinect1/rgb/image/compressed";
     std::string sourceframe = "kinect1_rgb_optical_frame"; //if empty use original
-    std::string targetframe = "marker_frame2";
+    std::string targetframe = "marker_frame";
     std::string triggertopic = "/trigger";
 //TODO ignore space and TF for /marker and marker_frame:    std::string
     float marker_size = 0.095;
@@ -168,6 +169,7 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
+            // fix trigger time to message
             if(m.getTopic() == triggertopic)
             {
                 geometry_msgs::TransformStamped omsg;
@@ -176,8 +178,9 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
+            // color
             sensor_msgs::CompressedImage::ConstPtr i = m.instantiate<sensor_msgs::CompressedImage>();
-            if(i && hasci && m.getTopic() == sourcetopic)
+            if(i && hasci && m.getTopic() == sourcetopicC)
             {
                 cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage);
                 //cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
