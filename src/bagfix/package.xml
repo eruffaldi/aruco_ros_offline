@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pagfix</name>
+  <version>0.0.1</version>
+  <description>
+    Bag fixups
+  </description>
+  <maintainer email="e.ruffaldi@sssup.it">Emanuele Ruffaldi</maintainer>
+  <license>BSD</license>
+  <author email="e.ruffaldi@sssup.it">Emanuele Ruffaldi</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>opencv2</depend>
+</package>
