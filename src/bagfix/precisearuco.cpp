@@ -118,7 +118,7 @@ void assign (geometry_msgs::TransformStamped & t, const tf::Transform tf, const 
     tf::transformStampedTFToMsg(stf,t);      
 } 
 
-int main(int argc, char const *argv[])
+int main(int argc, char * *argv)
 {
   ros::init(argc, argv, "arucoprocessor");
     aruco::CameraParameters camParam;
@@ -228,16 +228,21 @@ int main(int argc, char const *argv[])
                             outpix.data.push_back(ma[i].x);
                             outpix.data.push_back(ma[i].y);
                         }                      
+                        auto c = ma.getCenter();
+                        outpix.data.push_back(c.x);
+                        outpix.data.push_back(c.y);
                       }                    
-                        bag2.write("/markerpoints",omsg.header.stamp,outpix);
+                        bag2.write("/markerpoints",m.getTime(),outpix);
 
                     geometry_msgs::TransformStamped omsg;
                     tf::Transform tt = arucoMarker2Tf(ma);
                     // TODO fix here below
                     assign(omsg, tt, fixtime ? m.getTime():omsg.header.stamp, "marker","camera");
                     omsg.header = i->header;
-                    omsg.header.frame_id = sourceframe;
-                    omsg.child_frame_id = targetframe;
+                    if(!cameraframe.empty())
+                        omsg.header.frame_id = cameraframe;
+                    omsg.child_frame_id = marker_frame;
+
                     if(fixtime)
     	                omsg.header.stamp = m.getTime();
 
@@ -272,15 +277,15 @@ int main(int argc, char const *argv[])
                     omsg.transform.rotation.w = 0;
                     omsg.child_frame_id = targetframe;
                     omsg.header = i->header;
-                    omsg.header.frame_id = sourceframe;
+                    if(!cameraframe.empty())
+                        omsg.header.frame_id = cameraframe;
                 	omsg.header.stamp = m.getTime();
 
                     bag2.write(outtopic,omsg.header.stamp,omsg);
 
                 }
-                continue;
             }   
-            else if(i && skip_images)
+            if(i && skip_images)
                 continue; // skip images
 
             bag2.write(m.getTopic(),m.getTime(),m, m.getConnectionHeader());
