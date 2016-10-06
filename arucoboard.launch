@@ -1,5 +1,6 @@
 <launch>
 <node pkg="image_transport" name="co" output="screen" type="republish" args="compressed in:=/kinect1/rgb/image out:=/kinect1/rgb/image_de"/>
+
 <node pkg="bagfix" type="arucoboard" name="b" output="screen">
 <param name="board" value="/Users/eruffaldi/Documents/work/RAMCIPextra/calibtools/board.png" />
 <param name="board_config" value="/Users/eruffaldi/Documents/work/RAMCIPextra/calibtools/board_meters.yml" />

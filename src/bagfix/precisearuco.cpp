@@ -22,6 +22,8 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <tf2_msgs/TFMessage.h>
+#include <bagfix/Markers2D.h>
+#include <std_msgs/Float32MultiArray.h>
 
 #define foreach BOOST_FOREACH
 
@@ -118,6 +120,7 @@ void assign (geometry_msgs::TransformStamped & t, const tf::Transform tf, const 
 
 int main(int argc, char const *argv[])
 {
+  ros::init(argc, argv, "arucoprocessor");
     aruco::CameraParameters camParam;
     aruco::MarkerDetector mDetector;
     vector<aruco::Marker> markers;
@@ -127,32 +130,50 @@ int main(int argc, char const *argv[])
     rosbag::Bag bag2;
     if(argc == 1)
         return 0;
-    bag2.open("x.bag", rosbag::bagmode::Write);
-    std::string outtopic = "/marker";
-    int marker_id = 100;
-    std::string sourcetopic = "/kinect1/rgb/image/compressed";
-    std::string sourceframe = "kinect1_rgb_optical_frame"; //if empty use original
-    std::string targetframe = "marker_frame2";
-    std::string triggertopic = "/trigger";
-//TODO ignore space and TF for /marker and marker_frame:    std::string
-    float marker_size = 0.095;
 
+    std::string outbag;
+    std::string outtopic;
+    std::string image;
+    std::string cameraframe;
+    std::string targetframe;
+    std::string marker_frame;
+    std::string camera_info;
+    std::string trigger;
+    int marker_id = 100;
+    double marker_size = 0.095;
+    bool skip_images = false;
+
+    ros::NodeHandle pnh("~");
+    pnh.param<std::string>("outbag", outbag, "outbag.bag");
+    pnh.param<std::string>("outtopic", outtopic, "/marker");
+    pnh.param<std::string>("image", image, "/kinect1/rgb/image/compressed");
+    pnh.param<std::string>("cameraframe", cameraframe, "kinect1_rgb_optical_frame");
+    pnh.param<std::string>("camera_info", camera_info, "/kinect1/depth/camera_info");
+    pnh.param<std::string>("marker_frame", marker_frame, "marker_frame2");
+       pnh.param<std::string>("trigger", trigger, "trigger");
+       pnh.param("marker_id",marker_id,100);
+       pnh.param("marker_size",marker_size,0.095);
+       pnh.param("skip_images",skip_images,false);
+
+    bag2.open(outbag, rosbag::bagmode::Write);
+
+    bool fixtime = true;
+    bool useRectifiedImages = true;
     for(int k =1; k < argc; k++)
     {
-        bag.open(argv[k], rosbag::bagmode::Read);
+        std::string inbag = argv[k];
+        bag.open(inbag, rosbag::bagmode::Read);
         std::cout << "opened " << argv[k] << std::endl;
 
         rosbag::View view(bag); //, rosbag::TopicQuery(topics));
 
         sensor_msgs::CameraInfo ci;
-        bool useRectifiedImages = true;
-        bool fixtime = true;
         bool hasci = false;
 
         foreach(rosbag::MessageInstance const m, view)
         {
             sensor_msgs::CameraInfo::ConstPtr s = m.instantiate<sensor_msgs::CameraInfo>();
-            if(s)
+            if(s && (camera_info.empty() || m.getTopic() == camera_info))
             {
                 ci = *s;
                 hasci = true;
@@ -168,6 +189,7 @@ int main(int argc, char const *argv[])
                 continue;
             }
 
+            /*
             if(m.getTopic() == triggertopic)
             {
                 geometry_msgs::TransformStamped omsg;
@@ -175,9 +197,10 @@ int main(int argc, char const *argv[])
                 bag2.write(m.getTopic(),m.getTime(),omsg);
                 continue;
             }
+            */
 
             sensor_msgs::CompressedImage::ConstPtr i = m.instantiate<sensor_msgs::CompressedImage>();
-            if(i && hasci && m.getTopic() == sourcetopic)
+            if(i && hasci && m.getTopic() == image)
             {
                 cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage);
                 //cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
@@ -190,11 +213,24 @@ int main(int argc, char const *argv[])
                 mDetector.detect(inImage, markers, camParam, marker_size, false);
                 // publish ...
                 bool done = false;
+
                 for(auto & ma: markers)
                 {
+
+
                   // only publishing the selected marker
                   if(ma.id == marker_id)
                   {
+                        std_msgs::Float32MultiArray outpix;
+                      {
+                        for(int i = 0; i < ma.size(); i++)
+                        {
+                            outpix.data.push_back(ma[i].x);
+                            outpix.data.push_back(ma[i].y);
+                        }                      
+                      }                    
+                        bag2.write("/markerpoints",omsg.header.stamp,outpix);
+
                     geometry_msgs::TransformStamped omsg;
                     tf::Transform tt = arucoMarker2Tf(ma);
                     // TODO fix here below
@@ -213,12 +249,17 @@ int main(int argc, char const *argv[])
 
                     bag2.write("/tf",omsg.header.stamp,tfx);
 
+                    // then the pixels
+
+
                   }
                   else
                   {
                     std::cout << "skip marker " << ma.id << std::endl;
                   }
                 }
+
+
                 if(!done && false) // not send
                 {
                     geometry_msgs::TransformStamped omsg;
@@ -239,7 +280,7 @@ int main(int argc, char const *argv[])
                 }
                 continue;
             }   
-            else if(i)
+            else if(i && skip_images)
                 continue; // skip images
 
             bag2.write(m.getTopic(),m.getTime(),m, m.getConnectionHeader());
