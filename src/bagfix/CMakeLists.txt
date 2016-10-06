@@ -55,6 +55,7 @@ add_executable(decompressdepth decompressdepth.cpp)
 
 add_executable(arucoboard arucoboard.cpp)
 
+add_executable(arucoboardmake arucoboardmake.cpp)
 
 #############
 ## Install ##
