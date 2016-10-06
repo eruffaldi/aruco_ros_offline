@@ -1,0 +1,13 @@
+<launch>
+<node pkg="image_transport" name="co" output="screen" type="republish" args="compressed in:=/kinect1/rgb/image out:=/kinect1/rgb/image_de"/>
+<node pkg="bagfix" type="arucoboard" name="b" output="screen">
+<param name="board" value="/Users/eruffaldi/Documents/work/RAMCIPextra/calibtools/board.png" />
+<param name="board_config" value="/Users/eruffaldi/Documents/work/RAMCIPextra/calibtools/board_meters.yml" />
+<remap from="/image" to="/kinect1/rgb/image_de"/>
+<remap from="/camera_info" to="/kinect1/depth/camera_info"/>
+<param name="marker_size" value="0.095" />
+<param name="marker_frame" value="marker_frame"/>
+<param name="camera_frame" value="kinect1_rgb_optical_frame" />
+</node>
+
+</launch>

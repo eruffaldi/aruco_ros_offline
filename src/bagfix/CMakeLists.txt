@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   tf
   aruco
+  sensor_msgs
+  std_msgs
 #  aruco_msgs
 )
 
@@ -19,23 +21,39 @@ find_package(catkin REQUIRED COMPONENTS
 # cfg/ArucoThreshold.cfg
 #)
 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES aruco
-)
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
 )
 
+add_message_files(
+ FILES
+ Plane.msg
+ Marker2D.msg
+ Markers2D.msg
+
+ )
+ generate_messages( DEPENDENCIES std_msgs
+ )
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES aruco
+)
+
+
+
+link_libraries(${catkin_LIBRARIES})
+
 add_executable(arucooff precisearuco.cpp)
+
+add_executable(extractcamproj extractcamproj.cpp)
 
 add_executable(fixarucodepth fixarucodepth.cpp)
 
+add_executable(decompressdepth decompressdepth.cpp)
 
-#add_dependencies(single ${PROJECT_NAME}_gencfg)
-target_link_libraries(arucooff ${catkin_LIBRARIES})
+add_executable(arucoboard arucoboard.cpp)
 
 
 #############
