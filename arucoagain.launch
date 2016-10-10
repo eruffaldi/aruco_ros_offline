@@ -1,0 +1,9 @@
+<launch>
+
+<arg name="inbag" />
+<arg name="outbag" />
+
+<node pkg="bagfix" type="arucooff" name="tmp" output="screen" args="$(arg inbag)">
+	<param name="outbag" value="$(arg outbag)"/>
+</node>
+</launch>
